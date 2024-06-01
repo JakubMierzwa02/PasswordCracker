@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(PasswordCracker
     src/main.cpp
+    src/PasswordCracker.cpp
+    src/HashAlgorithms.h
 )
 
 target_link_libraries(PasswordCracker cryptopp)
