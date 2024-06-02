@@ -1,7 +1,7 @@
 #include "PasswordCracker.h"
 
 PasswordCracker::PasswordCracker()
-    : cracked(false)
+    : cracked(false), interrupted(false)
 {
 
 }
@@ -26,6 +26,7 @@ void PasswordCracker::startCracking(const std::string& hashFile, int numThreads)
         }
 
         cracked = false;
+        interrupted = false;
         crackedPassword.clear();
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -57,7 +58,14 @@ void PasswordCracker::startCracking(const std::string& hashFile, int numThreads)
         std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
 
         logResults("../results.txt");
+
+        if (interrupted)
+        {
+            std::cout << "Process interrupted by user." << std::endl;
+            break;
+        }
     }
+    file.close();
 }
 
 void PasswordCracker::dictionaryAttack(const std::string& dictionaryFile, int numThreads)
@@ -119,13 +127,23 @@ void PasswordCracker::logResults(const std::string& filename) const
     file.close();
 }
 
+void PasswordCracker::interrupt()
+{
+    interrupted.store(true);
+}
+
+// bool PasswordCracker::shouldInterrupt() const
+// {
+//     return interrupted.load();
+// }
+
 void PasswordCracker::bruteForce(int threadID, int numThreads)
 {
     int maxLength = 10;
-    for (int length = 1; length <= maxLength && !cracked.load(); ++length)
+    for (int length = 1; length <= maxLength && !cracked.load() && !interrupted.load(); ++length)
     {
         int totalCombinations = pow(73, length);
-        for (int i = threadID; i < totalCombinations && !cracked.load(); i += numThreads)
+        for (int i = threadID; i < totalCombinations && !cracked.load() && !interrupted.load(); i += numThreads)
         {
             std::string attempt = generatePassword(length, i);
             std::string hashedAttempt = HashAlgorithms::hashSHA256(attempt);
@@ -141,7 +159,7 @@ void PasswordCracker::bruteForce(int threadID, int numThreads)
 
 void PasswordCracker::dictionaryWorker(int threadID, int numThreads, const std::vector<std::string>& passwords)
 {
-    for (size_t i = threadID; i < passwords.size() && !cracked.load(); i += numThreads)
+    for (size_t i = threadID; i < passwords.size() && !cracked.load() && !interrupted.load(); i += numThreads)
     {
         if (checkPassword(passwords[i]))
         {
