@@ -132,11 +132,6 @@ void PasswordCracker::interrupt()
     interrupted.store(true);
 }
 
-// bool PasswordCracker::shouldInterrupt() const
-// {
-//     return interrupted.load();
-// }
-
 void PasswordCracker::bruteForce(int threadID, int numThreads)
 {
     int maxLength = 10;

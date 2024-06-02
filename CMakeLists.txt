@@ -12,4 +12,7 @@ add_executable(PasswordCracker
     src/HashAlgorithms.h
 )
 
-target_link_libraries(PasswordCracker cryptopp)
+target_link_libraries(PasswordCracker cryptopp pthread)
+
+enable_testing()
+add_subdirectory(test)

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <chrono>
 #include <fstream>
+#include "../test/googletest/googletest/include/gtest/gtest_prod.h"
 
 #include "HashAlgorithms.h"
 
@@ -21,7 +22,6 @@ public:
     bool checkPassword(const std::string& password);
     bool isCracked() const;
     void interrupt();
-    //bool shouldInterrupt() const;
 
 private:
     std::string targetHash;
@@ -33,6 +33,10 @@ private:
     void dictionaryWorker(int threadID, int numThreads, const std::vector<std::string>& passwords);
     bool compareHash(const std::string& hash);
     std::string generatePassword(int length, int index);
+
+    FRIEND_TEST(PasswordCrackerTest, GeneratePassword);
+    FRIEND_TEST(PasswordCrackerTest, CompareHash);
+    FRIEND_TEST(PasswordCrackerTest, CheckPassword);
 };
 
 #endif
