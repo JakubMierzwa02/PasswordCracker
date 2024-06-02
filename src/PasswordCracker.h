@@ -14,8 +14,9 @@
 class PasswordCracker
 {
 public:
-    PasswordCracker(const std::string& targetHash);
-    void startCracking(int numThreads);
+    PasswordCracker();
+    void logResults(const std::string& filename) const;
+    void startCracking(const std::string& hashFile, int numThreads);
     void dictionaryAttack(const std::string& dictionaryFile, int numThreads);
     bool checkPassword(const std::string& password);
     bool isCracked() const;

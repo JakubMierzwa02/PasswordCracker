@@ -4,22 +4,18 @@
 
 int main()
 {
-    std::string targetHash = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8";
+    std::string hashFile;
 
-    for (int i = 0; i < targetHash.size(); i++)
-    {
-        targetHash[i] = std::toupper(targetHash[i]);
-    }
+    std::cout << "Enter the file path containing the hashes: ";
+    std::cin >> hashFile;
 
     int numThreads;
     std::cout << "Enter number of threads: ";
     std::cin >> numThreads;
 
-    PasswordCracker cracker(targetHash);
+    PasswordCracker cracker;
 
-    cracker.dictionaryAttack("../common_passwords.txt", numThreads);
-
-    cracker.startCracking(numThreads);
+    cracker.startCracking(hashFile, numThreads);
 
     return 0;
 }

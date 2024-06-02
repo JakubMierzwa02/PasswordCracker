@@ -1,39 +1,63 @@
 #include "PasswordCracker.h"
 
-PasswordCracker::PasswordCracker(const std::string& targetHash)
-    : targetHash(targetHash), cracked(false)
+PasswordCracker::PasswordCracker()
+    : cracked(false)
 {
 
 }
 
-void PasswordCracker::startCracking(int numThreads)
+void PasswordCracker::startCracking(const std::string& hashFile, int numThreads)
 {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    std::vector<std::thread> threads;
-    for (int i = 0; i < numThreads; ++i)
+    std::ifstream file(hashFile);
+    if (!file)
     {
-        threads.emplace_back(&PasswordCracker::bruteForce, this, i, numThreads);
+        std::cerr << "Could not open the hash file" << std::endl;
+        return;
     }
 
-    for (auto& thread : threads)
+    std::string hash;
+    while (file >> hash)
     {
-        thread.join();
-    }
+        targetHash = hash;
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
+        for (int i = 0; i < targetHash.size(); i++)
+        {
+            targetHash[i] = std::toupper(targetHash[i]);
+        }
 
-    if (cracked)
-    {
-        std::cout << "Password cracked: " << crackedPassword << std::endl;
-    }
-    else
-    {
-        std::cout << "Password not found" << std::endl;
-    }
+        cracked = false;
+        crackedPassword.clear();
 
-    std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
+        auto start = std::chrono::high_resolution_clock::now();
+
+        dictionaryAttack("../common_passwords.txt", numThreads);
+
+        std::vector<std::thread> threads;
+        for (int i = 0; i < numThreads; ++i)
+        {
+            threads.emplace_back(&PasswordCracker::bruteForce, this, i, numThreads);
+        }
+        for (auto& thread : threads)
+        {
+            thread.join();
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end - start;
+
+        if (cracked)
+        {
+            std::cout << "Password cracked: " << crackedPassword << std::endl;
+        }
+        else
+        {
+            std::cout << "Password not found" << std::endl;
+        }
+
+        std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
+
+        logResults("../results.txt");
+    }
 }
 
 void PasswordCracker::dictionaryAttack(const std::string& dictionaryFile, int numThreads)
@@ -76,9 +100,28 @@ bool PasswordCracker::isCracked() const
     return cracked.load();
 }
 
+void PasswordCracker::logResults(const std::string& filename) const
+{
+    std::ofstream file(filename, std::ios::app);
+    if (file.is_open())
+    {
+        file << "Target hash: " << targetHash << std::endl;
+        if (cracked)
+        {
+            file << "Password cracked: " << crackedPassword << std::endl;
+        }
+        else
+        {
+            file << "Password not found\n";
+        }
+        file << '\n';
+    }
+    file.close();
+}
+
 void PasswordCracker::bruteForce(int threadID, int numThreads)
 {
-    int maxLength = 5;
+    int maxLength = 10;
     for (int length = 1; length <= maxLength && !cracked.load(); ++length)
     {
         int totalCombinations = pow(73, length);
@@ -92,7 +135,6 @@ void PasswordCracker::bruteForce(int threadID, int numThreads)
                 cracked.store(true);
                 break;
             }
-            // std::cout << "Thread " << threadID << ": Attempting " << attempt << " -> " << hashedAttempt << std::endl;
         }
     }
 }
