@@ -31,10 +31,8 @@ void PasswordCracker::startCracking(const std::string &hashFile, int numThreads)
     {
         targetHash = hash;
 
-        for (int i = 0; i < targetHash.size(); i++)
-        {
-            targetHash[i] = std::toupper(targetHash[i]);
-        }
+        for (auto& c : targetHash)
+            c = std::toupper(c);
 
         cracked = false;
         interrupted = false;
@@ -47,7 +45,7 @@ void PasswordCracker::startCracking(const std::string &hashFile, int numThreads)
         std::vector<std::thread> threads;
         for (int i = 0; i < numThreads; ++i)
         {
-            threads.emplace_back(&PasswordCracker::bruteForce, this, i, numThreads);
+            threads.emplace_back([this, i, numThreads]() { this->bruteForce(i, numThreads); });
         }
         for (auto &thread : threads)
         {
@@ -104,7 +102,7 @@ void PasswordCracker::dictionaryAttack(const std::string &dictionaryFile, int nu
     std::vector<std::thread> threads;
     for (int i = 0; i < numThreads; ++i)
     {
-        threads.emplace_back(&PasswordCracker::dictionaryWorker, this, i, numThreads, passwords);
+        threads.emplace_back([this, i, numThreads, passwords]() { this->dictionaryWorker(i, numThreads, passwords); });
     }
 
     for (auto &thread : threads)
@@ -174,13 +172,13 @@ void PasswordCracker::bruteForce(int threadID, int numThreads)
     int maxLength = 10;
     for (int length = 1; length <= maxLength && !cracked.load() && !interrupted.load(); ++length)
     {
-        int totalCombinations = pow(73, length);
+        int totalCombinations = static_cast<int>(pow(73, length));
         for (int i = threadID; i < totalCombinations && !cracked.load() && !interrupted.load(); i += numThreads)
         {
             std::string attempt = generatePassword(length, i);
-            std::string hashedAttempt = HashAlgorithms::hashSHA256(attempt);
             if (checkPassword(attempt))
             {
+                std::lock_guard<std::mutex> lock(resultMutex);
                 crackedPassword = attempt;
                 cracked.store(true);
                 break;
@@ -201,6 +199,7 @@ void PasswordCracker::dictionaryWorker(int threadID, int numThreads, const std::
     {
         if (checkPassword(passwords[i]))
         {
+            std::lock_guard<std::mutex> lock(resultMutex);
             crackedPassword = passwords[i];
             cracked.store(true);
             break;

@@ -11,6 +11,9 @@
 #include <iostream>
 #include <chrono>
 #include <fstream>
+#include <unordered_set>
+#include <mutex>
+#include <condition_variable>
 #include "../test/googletest/googletest/include/gtest/gtest_prod.h"
 #include "HashAlgorithms.h"
 
@@ -69,6 +72,7 @@ private:
     std::atomic<bool> cracked;      ///< Indicates if the password has been cracked
     std::atomic<bool> interrupted;  ///< Indicates if the cracking process has been interrupted
     std::string crackedPassword;    ///< The cracked password
+    std::mutex resultMutex;
 
     /**
      * @brief Performs a brute force attack to crack the password
