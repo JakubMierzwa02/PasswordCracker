@@ -1,12 +1,23 @@
+/**
+ * @file PasswordCracker.cpp
+ */
+
 #include "PasswordCracker.h"
 
+/**
+ * @brief Constructor for the PasswordCracker class
+ */
 PasswordCracker::PasswordCracker()
     : cracked(false), interrupted(false)
 {
-
 }
 
-void PasswordCracker::startCracking(const std::string& hashFile, int numThreads)
+/**
+ * @brief Starts the password cracking process using the specified hash file and number of threads
+ * @param hashFile The file containing the hash to be cracked
+ * @param numThreads The number of threads to use for the cracking process
+ */
+void PasswordCracker::startCracking(const std::string &hashFile, int numThreads)
 {
     std::ifstream file(hashFile);
     if (!file)
@@ -38,7 +49,7 @@ void PasswordCracker::startCracking(const std::string& hashFile, int numThreads)
         {
             threads.emplace_back(&PasswordCracker::bruteForce, this, i, numThreads);
         }
-        for (auto& thread : threads)
+        for (auto &thread : threads)
         {
             thread.join();
         }
@@ -68,7 +79,12 @@ void PasswordCracker::startCracking(const std::string& hashFile, int numThreads)
     file.close();
 }
 
-void PasswordCracker::dictionaryAttack(const std::string& dictionaryFile, int numThreads)
+/**
+ * @brief Performs a dictionary attack using the specified dictionary file and number of threads
+ * @param dictionaryFile The file containing a list of potential passwords
+ * @param numThreads The number of threads to use for the dictionary attack
+ */
+void PasswordCracker::dictionaryAttack(const std::string &dictionaryFile, int numThreads)
 {
     std::ifstream file(dictionaryFile);
     if (!file)
@@ -91,24 +107,37 @@ void PasswordCracker::dictionaryAttack(const std::string& dictionaryFile, int nu
         threads.emplace_back(&PasswordCracker::dictionaryWorker, this, i, numThreads, passwords);
     }
 
-    for (auto& thread : threads)
+    for (auto &thread : threads)
     {
         thread.join();
     }
 }
 
-bool PasswordCracker::checkPassword(const std::string& password)
+/**
+ * @brief Checks if the given password matches the target hash
+ * @param password The password to be checked
+ * @return True if the password matches the hash, false otherwise
+ */
+bool PasswordCracker::checkPassword(const std::string &password)
 {
     std::string hashedPassword = HashAlgorithms::hashSHA256(password);
     return compareHash(hashedPassword);
 }
 
+/**
+ * @brief Checks if the password has been successfully cracked
+ * @return True if the password is cracked, false otherwise
+ */
 bool PasswordCracker::isCracked() const
 {
     return cracked.load();
 }
 
-void PasswordCracker::logResults(const std::string& filename) const
+/**
+ * @brief Logs the results of the password cracking attempt to a file
+ * @param filename The name of the file to log the results to
+ */
+void PasswordCracker::logResults(const std::string &filename) const
 {
     std::ofstream file(filename, std::ios::app);
     if (file.is_open())
@@ -127,11 +156,19 @@ void PasswordCracker::logResults(const std::string& filename) const
     file.close();
 }
 
+/**
+ * @brief Interrupts the password cracking process
+ */
 void PasswordCracker::interrupt()
 {
     interrupted.store(true);
 }
 
+/**
+ * @brief Performs a brute force attack to crack the password
+ * @param threadID The ID of the current thread
+ * @param numThreads The total number of threads
+ */
 void PasswordCracker::bruteForce(int threadID, int numThreads)
 {
     int maxLength = 10;
@@ -152,7 +189,13 @@ void PasswordCracker::bruteForce(int threadID, int numThreads)
     }
 }
 
-void PasswordCracker::dictionaryWorker(int threadID, int numThreads, const std::vector<std::string>& passwords)
+/**
+ * @brief Worker function for the dictionary attack
+ * @param threadID The ID of the current thread
+ * @param numThreads The total number of threads
+ * @param passwords The list of potential passwords
+ */
+void PasswordCracker::dictionaryWorker(int threadID, int numThreads, const std::vector<std::string> &passwords)
 {
     for (size_t i = threadID; i < passwords.size() && !cracked.load() && !interrupted.load(); i += numThreads)
     {
@@ -165,11 +208,22 @@ void PasswordCracker::dictionaryWorker(int threadID, int numThreads, const std::
     }
 }
 
-bool PasswordCracker::compareHash(const std::string& hash)
+/**
+ * @brief Compares the given hash with the target hash
+ * @param hash The hash to be compared
+ * @return True if the hashes match, false otherwise
+ */
+bool PasswordCracker::compareHash(const std::string &hash)
 {
     return hash == targetHash;
 }
 
+/**
+ * @brief Generates a password of the given length and index
+ * @param length The length of the password to be generated
+ * @param index The index used to generate the password
+ * @return The generated password
+ */
 std::string PasswordCracker::generatePassword(int length, int index)
 {
     const std::string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
@@ -177,8 +231,8 @@ std::string PasswordCracker::generatePassword(int length, int index)
     std::string password(length, ' ');
     for (int i = 0; i < length; ++i)
     {
-        password[length - 1 - i] = charset[index % 73];
-        index /= 73;
+        password[length - 1 - i] = charset[index % charset.size()];
+        index /= charset.size();
     }
     return password;
 }
